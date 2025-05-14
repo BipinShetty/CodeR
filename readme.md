@@ -20,6 +20,8 @@ Built in **FastAPI (Python)** with a focus on clear architecture, strong typing,
 * Test coverage for main flows
 
 ---
+![Screen Shot 2025-05-14 at 2 51 56 PM](https://github.com/user-attachments/assets/bcfe207b-e34a-468b-938e-acf09057c804)
+![Screen Shot 2025-05-14 at 2 52 15 PM](https://github.com/user-attachments/assets/b756178e-5913-4cef-a29b-0282ee4e9ba4)
 
 ## ⚙️ Setup Instructions
 
