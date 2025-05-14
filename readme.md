@@ -106,36 +106,24 @@ This section outlines not just what choices were made, but also *why* they were 
 **Strategy**:
 
 * Retry on transient exceptions (e.g., timeouts)
-* Exponential backoff (could be added with `tenacity`)
 * Clear logs on success/failure
-
-**Why not use a decorator library like `tenacity`?**
-For transparency and fine-grained control during local debugging, I opted for manual retry logic in the prototype. In a production-grade system, `tenacity` or similar libraries would offer reusable, declarative, and centrally managed retry policies.
 
 ---
 
 ### ⏳ Why Background Cleanup?
 
-**Purpose:**
-To archive stale issues and avoid unbounded memory usage in long-running services.
+Used for **auto-archiving old issues(30+ days)** (simulating TTL on stale data like abandoned tasks or outdated events).
 
-**Implementation:**
-Used `asyncio.create_task()` with `sleep()` intervals to run a periodic cleanup loop. This approach works well for single-instance dev environments.
+**Implementation**: `asyncio.create_task` with periodic purging of issues older than a threshold.
 
-**Why not production schedulers like Celery initially?**
-For this prototype, I prioritized minimal dependencies. Adding Celery requires external brokers and introduces operational complexity.
+**Why not use Celery or distributed task queues initially?**
+For the prototype, I chose `asyncio` due to its lightweight setup and minimal infra requirements. It avoids additional brokers or services (e.g., Redis) and keeps the system easy to run and review. In production, this would be replaced by:
 
-**Trade-offs:**
+**Scaling**:
 
-| Pros                    | Cons                                   |
-| ----------------------- | -------------------------------------- |
-| Avoids infra complexity | Not suitable for clustered deployments |
-| Easy to test locally    | No retry or metrics support            |
-
-**Cloud-Ready Approaches:**
-
-* AWS Lambda + CloudWatch Scheduled Events
-* Kubernetes CronJobs wi
+* A **Celery beat job** (with Redis or RabbitMQ backend)
+* A **serverless function** on a timer (e.g., Azure Functions)
+* A **cronjob** in Kubernetes or ECS Scheduled Tasks
 
 ---
 
