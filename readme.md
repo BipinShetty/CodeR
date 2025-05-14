@@ -1,6 +1,8 @@
-# Agentic Issue Planner
+# 🐇 Agentic Issue Planner
 
-This is a modular, event-driven backend system designed to simulate intelligent issue triage and planning using a mock LLM client. Built with FastAPI and Python, the service demonstrates strong typing, clear architecture, robust logging, and extensibility — all aligned with the CodeRabbit take-home specification.
+A modular, type-safe, event-driven backend system simulating intelligent issue triage and planning using a mock LLM client.
+
+Built in **FastAPI (Python)** with a focus on clear architecture, strong typing, composability, observability, and extensibility — aligned with the CodeRabbit specification and real-world engineering principles.
 
 ---
 
@@ -19,29 +21,25 @@ This is a modular, event-driven backend system designed to simulate intelligent 
 
 ---
 
-## 🔧 Setup Instructions
+## ⚙️ Setup Instructions
 
-### 1. Install dependencies
+### Install dependencies
 
 ```bash
 pip install fastapi uvicorn pydantic
 ```
 
-### 2. Run the server
+### Run the server
 
 ```bash
 uvicorn main:app --reload
 ```
 
-The interactive Swagger UI will be available at:
-
-```
-http://localhost:8000/docs
-```
+Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## 📋 Sample Issue Payload
+## 🧪 Example Payload
 
 ```json
 {
@@ -57,13 +55,133 @@ http://localhost:8000/docs
 
 ## ✅ Testing
 
-Run the tests using:
+Run all tests:
 
 ```bash
 pytest tests/test_api.py
 ```
 
-You can also test endpoints using Postman or directly via Swagger UI.
+---
+
+## 🧠 Design Decisions & Trade-Offs
+
+This section outlines not just what choices were made, but also *why* they were made over other viable alternatives — reflecting judgment under time constraints and practical engineering trade-offs.
+
+This section outlines not just what choices were made, but also *why* they were made over other viable alternatives — to reflect thoughtful system design and real-world engineering trade-offs.
+
+### 💃️ Why In-Memory DB?
+
+**Decision**: Used a Python `dict`-based in-memory store for simplicity.
+
+**Pros:**
+
+* Simplifies development under time constraints (no external services required)
+* Fast read/write performance for small workloads
+* Avoids schema setup, migrations, or connection handling
+
+**Cons:**
+
+* Volatile — data is lost on restart
+* Unsuitable for multi-instance deployments or distributed coordination
+
+**Alternatives Considered:**
+
+* **SQLite/PostgreSQL**: Persistent but needs schema management and connections
+* **Redis**: Good for ephemeral state but adds infra and orchestration complexity
+
+**Scaling Strategy:**
+
+* Replace with a distributed database (e.g., PostgreSQL, DynamoDB, or Cassandra)
+* Shard across tenants or issue categories if dataset grows large
+* Add distributed locking or row-level versioning for consistency
+* Replace with **PostgreSQL** (if schema/querying is primary) or **Redis** (if TTL/cache-first)
+* Run on cloud (e.g., AWS RDS / Elasticache)
+
+---
+
+### 🔄 Why Retry & Timeout Logic?
+
+**LLM calls are I/O-bound and error-prone**, especially if later replaced with real HTTP/gRPC models. The retry layer improves robustness.
+
+**Strategy**:
+
+* Retry on transient exceptions (e.g., timeouts)
+* Exponential backoff (could be added with `tenacity`)
+* Clear logs on success/failure
+
+**Why not use a decorator library like `tenacity`?**
+For transparency and fine-grained control during local debugging, I opted for manual retry logic in the prototype. In a production-grade system, `tenacity` or similar libraries would offer reusable, declarative, and centrally managed retry policies.
+
+---
+
+### ⏳ Why Background Cleanup?
+
+**Purpose:**
+To archive stale issues and avoid unbounded memory usage in long-running services.
+
+**Implementation:**
+Used `asyncio.create_task()` with `sleep()` intervals to run a periodic cleanup loop. This approach works well for single-instance dev environments.
+
+**Why not production schedulers like Celery initially?**
+For this prototype, I prioritized minimal dependencies. Adding Celery requires external brokers and introduces operational complexity.
+
+**Trade-offs:**
+
+| Pros                    | Cons                                   |
+| ----------------------- | -------------------------------------- |
+| Avoids infra complexity | Not suitable for clustered deployments |
+| Easy to test locally    | No retry or metrics support            |
+
+**Cloud-Ready Approaches:**
+
+* AWS Lambda + CloudWatch Scheduled Events
+* Kubernetes CronJobs wi
+
+---
+
+## 🌐 Extensibility & Real-World Readiness
+
+| Component   | Designed For                      |
+| ----------- | --------------------------------- |
+| LLMClient   | Easily swappable (via interface)  |
+| Models      | Strong typing via `pydantic`      |
+| Endpoints   | RESTful, documented, testable     |
+| Storage     | Abstracted, can support real DB   |
+| Retry Layer | Pluggable, resilient, centralized |
+
+---
+
+## 🔍 Improvements with More Time
+
+If given more time, I would:
+
+* Add persistent DB + ORM (e.g., PostgreSQL + SQLAlchemy)
+* Deploy via Docker & Helm on Kubernetes
+* Add proper async test coverage with mock injection
+* Integrate a structured logging framework (e.g., `loguru`)
+* Separate business logic from transport layer (Hex architecture)
+* Add Prometheus-compatible metrics and tracing
+
+---
+
+## 🧭 Architectural Overview
+
+```
+                  +---------------------+
+                  |  /events (FastAPI)  |
+                  +----------+----------+
+                             |
+                       Normalizer
+                             |
+            +------------------------------+
+            |   IssueService (Core Logic)  |
+            +--------+----------+---------+
+                     |          |
+          +----------+          +--------------+
+          |                                |
+    In-MemoryStore                  LLMClientAdapter (mock)
+    (can be swapped)               (can inject real client)
+```
 
 ---
 
