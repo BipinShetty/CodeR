@@ -158,7 +158,6 @@ If given more time, I would:
 * Add persistent DB + ORM (e.g., PostgreSQL + SQLAlchemy)
 * Deploy via Docker & Helm on Kubernetes
 * Add proper async test coverage with mock injection
-* Integrate a structured logging framework (e.g., `loguru`)
 * Separate business logic from transport layer (Hex architecture)
 * Add Prometheus-compatible metrics and tracing
 
